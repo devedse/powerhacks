@@ -1,0 +1,240 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "type": "string"
+    },
+    "vmUser": {
+      "type": "string"
+    },
+    "vmPass": {
+      "type": "securestring"
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D1"
+    },
+    "octopusUrl": {
+      "type": "string"
+    },
+    "octopusApi": {
+      "type": "string"
+    },
+    "octopusEnv": {
+      "type": "string"
+    },
+    "octopusRole": {
+      "type": "string",
+      "defaultValue": "web-server"
+    },
+    "octopusPort": {
+      "type": "int",
+      "defaultValue": 10933
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    // storage account
+    "storageAccountName": "[tolower(concat('mestorage',uniquestring(resourceGroup().id)))]",
+    "storageUri": "[concat('http','://',variables('storageAccountName'),'.blob.core.windows.net/')]",
+    // virtual machine
+    "vmDiskName": "[toLower(concat(parameters('vmName'),'-osDisk'))]",
+    "vmDiskUri": "[concat(variables('storageUri'),'vhds/',variables('vmDiskName'),'.vhd')]",
+    // virtual network
+    "virtualNetworkName": "[resourceGroup().name]",
+    "virtualNetworkId": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+    "addressPrefix": "10.0.0.0/16",
+    "subnetPrefix": "10.0.0.0/24",
+    "subnetName": "default",
+    "subnetRef": "[concat(variables('virtualNetworkId'),'/subnets/',variables('subnetName'))]",
+    "publicIPAddressName": "[toLower(concat(parameters('vmName'),'-publicip'))]",
+    "publicIPAddressType": "Dynamic",
+    "dnsNamePrefix": "[toLower(concat(parameters('vmName'),uniquestring(resourceGroup().id)))]",
+    "nicName": "[toLower(concat(parameters('vmName'),'-nic'))]",
+    "nicId": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "name": "[variables('storageAccountName')]",
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "name": "[variables('publicIPAddressName')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dnsNamePrefix')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "name": "[variables('virtualNetworkName')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [ "[variables('addressPrefix')]" ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "name": "[variables('nicName')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "name": "[parameters('vmName')]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[parameters('vmSize')]" },
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('vmUser')]",
+          "adminPassword": "[parameters('vmPass')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[variables('vmDiskName')]",
+            "vhd": { "uri": "[variables('vmDiskUri')]" },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": "true",
+            "storageUri": "[variables('storageUri')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "name": "[concat(parameters('vmName'),'/Microsoft.Powershell.DSC')]",
+      "dependsOn": [ "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]" ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.15",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "ModulesUrl": "https://octopusdsc.blob.core.windows.net/octopus-azure/Octopus.zip",
+          "SasToken": "",
+          "ConfigurationFunction": "Octopus.ps1\\OctopusAzureConfig",
+          "Properties": [
+            {
+              "Name": "OctopusServerUrl",
+              "Value": "[parameters('octopusUrl')]",
+              "TypeName": "System.String"
+            },
+            {
+              "Name": "ApiKey",
+              "Value": "[parameters('octopusApi')]",
+              "TypeName": "System.String"
+            },
+            {
+              "Name": "Environments",
+              "Value": "[parameters('octopusEnv')]",
+              "TypeName": "System.String"
+            },
+            {
+              "Name": "Roles",
+              "Value": "[parameters('octopusRole')]",
+              "TypeName": "System.String"
+            },
+            {
+              "Name": "ListenPort",
+              "Value": "[parameters('octopusPort')]",
+              "TypeName": "System.Int32"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "name": "[concat(parameters('vmName'),'/CustomScriptExtension')]",
+      "tags": {
+        "displayName": "CustomScriptExtension"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": { },
+        "settings": {
+          "fileUris": [
+		    "https://raw.githubusercontent.com/andregeuze/powerhacks/master/configuration/enable-feature-iis.ps1"
+          ],
+          "commandToExecute": "powershell -file enable-feature-iis.ps1"
+        }
+      }
+    }
+  ]
+}
