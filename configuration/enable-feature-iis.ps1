@@ -28,7 +28,6 @@ Add-WindowsFeature -Name Web-Common-Http,Web-Asp-Net,Web-Asp-Net45,Web-Net-Ext,W
 # --------------------------------------------------------------------
 Import-Module WebAdministration
 
-
 # --------------------------------------------------------------------
 # Setting directory access
 # --------------------------------------------------------------------
@@ -42,3 +41,13 @@ cmd.exe /c $Command
 # --------------------------------------------------------------------
 $Command = "IISRESET"
 Invoke-Expression -Command $Command
+
+# --------------------------------------------------------------------
+# Install Chocolatey
+# --------------------------------------------------------------------
+iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
+
+# --------------------------------------------------------------------
+# Install MS Web Deploy through chocolatey
+# --------------------------------------------------------------------
+choco install webdeploy
