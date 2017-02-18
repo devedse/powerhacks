@@ -50,4 +50,4 @@ iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex
 # --------------------------------------------------------------------
 # Install MS Web Deploy through chocolatey
 # --------------------------------------------------------------------
-choco install webdeploy
+choco install webdeploy -y
