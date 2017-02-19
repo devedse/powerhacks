@@ -230,9 +230,9 @@
         "protectedSettings": { },
         "settings": {
           "fileUris": [
-		    "https://raw.githubusercontent.com/andregeuze/powerhacks/master/configuration/enable-feature-iis.ps1"
+		    "https://raw.githubusercontent.com/andregeuze/powerhacks/master/configuration/enable-features-webserver.ps1"
           ],
-          "commandToExecute": "powershell -file enable-feature-iis.ps1"
+          "commandToExecute": "powershell -file enable-features-webserver.ps1 -iis -chocolatey -webdeploy"
         }
       }
     }

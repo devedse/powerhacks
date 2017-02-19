@@ -1,18 +1,16 @@
-cls
+﻿param(
+    [Parameter(Mandatory=$True)]
+    $resourceGroupName,
 
-# define VM name
-$prefix = "ME"
-$env = "Production"
-$vmName = "$prefix$env"
-$templateFile = "templates\webserver.json"
+    [Parameter(Mandatory=$True)]
+    $templateFile,
+
+    [Parameter(Mandatory=$True)]
+    $templateParameters
+)
 
 # define resource group template file and params
 $templateFilePath = (Split-Path $MyInvocation.MyCommand.Path) + "\$templateFile"
-$templateParams = @{ 
-    vmName=$vmName;
-    vmUser='me';
-    vmPass='ModernEngineering!';   
-}
 
 # login to Azure Resource Manager
 try {get-azureRmContext} catch {Login-AzureRmAccount}
@@ -47,11 +45,11 @@ Get-AzureRmContext
 Get-AzureRmContext | Select Subscription
 
 # create the deploy resource group, if it does not exist already
-New-AzureRmResourceGroup -Name $vmName -Location 'westeurope' -Force
+New-AzureRmResourceGroup -Name $resourceGroupName -Location 'westeurope' -Force
 
 # deploy using the resource group template
 Write-Host 'Deploying... This might take a few minutes...' -ForegroundColor Yellow
-New-AzureRmResourceGroupDeployment -Name $vmName -ResourceGroupName $vmName -TemplateFile $templateFilePath -TemplateParameterObject $templateParams -ErrorVariable 'deployError' -Verbose
+New-AzureRmResourceGroupDeployment -Name $resourceGroupName -ResourceGroupName $resourceGroupName -TemplateFile $templateFilePath -TemplateParameterObject $templateParameters -ErrorVariable 'deployError' -Verbose
 
 # output result
 if ($deployError -ne $null) {

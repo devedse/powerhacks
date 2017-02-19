@@ -170,7 +170,7 @@
           "fileUris": [
 		    "https://raw.githubusercontent.com/andregeuze/powerhacks/master/configuration/enable-features-webserver.ps1"
           ],
-          "commandToExecute": "powershell -file enable-features-webserver.ps1 -iis -chocolatey -webdeploy"
+          "commandToExecute": "powershell -file enable-features-webserver.ps1 -iis -chocolatey -webdeploy -vsts"
         }
       }
     }
