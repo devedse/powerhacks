@@ -2,7 +2,8 @@
     [switch] $iis,
     [switch] $chocolatey,
     [switch] $webdeploy,
-    [switch] $vsts
+    [switch] $vsts,
+    [switch] $nodejs
 )
 
 # Set machine policy unrestricted
@@ -70,6 +71,14 @@ if ($webdeploy -and $chocolatey)
     # Install MS Web Deploy through chocolatey
     # --------------------------------------------------------------------
     choco install webdeploy -y
+}
+
+if ($nodejs -and $chocolatey)
+{
+    # --------------------------------------------------------------------
+    # Install Nodejs through chocolatey
+    # --------------------------------------------------------------------
+    choco install nodejs.install -y
 }
 
 if ($vsts)
