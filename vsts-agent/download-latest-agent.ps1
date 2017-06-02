@@ -32,7 +32,8 @@ function downloadFile($url, $targetFile)
 } 
 
 # Call github api to get the latest release information
-$response = iwr -Uri "$vstsAgentGithubUrl" -Method Get
+# UseBasicParsing because IE engine may not be available on all target machines
+$response = iwr -Uri "$vstsAgentGithubUrl" -Method Get -UseBasicParsing
 
 # Convert the content to json
 $json = $response.Content | ConvertFrom-Json
