@@ -22,7 +22,7 @@ function downloadFile($url, $targetFile)
         $targetStream.Write($buffer, 0, $count) 
         $count = $responseStream.Read($buffer,0,$buffer.length) 
         $downloadedBytes = $downloadedBytes + $count 
-        Write-Progress -activity "Downloading file '$($url.split('/') | Select -Last 1)'" -status "Downloaded ($([System.Math]::Floor($downloadedBytes/1024))K of $($totalLength)K): " -PercentComplete ((([System.Math]::Floor($downloadedBytes/1024)) / $totalLength)  * 100)
+        Write-Progress -activity "Downloading file '$($url.split('/') | Select -Last 1)' to location '$(Resolve-Path $targetFile)'" -status "Downloaded ($([System.Math]::Floor($downloadedBytes/1024))K of $($totalLength)K): " -PercentComplete ((([System.Math]::Floor($downloadedBytes/1024)) / $totalLength)  * 100)
     } 
     Write-Progress -activity "Finished downloading file '$($url.split('/') | Select -Last 1)'"
     $targetStream.Flush()
