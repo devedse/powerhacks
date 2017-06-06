@@ -12,7 +12,8 @@ param(
 
 $ErrorActionPreference="Stop"
 $agentZip="$PSScriptRoot\agent.zip"
-If(-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
+
+If(-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     throw "Run command in Administrator PowerShell Prompt"
 }
@@ -32,7 +33,8 @@ Else
 	Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory($agentZip, "$env:SystemDrive\$agentfolder")
 }
-Remove-Item $agentZip
+
+Remove-Item $agentZip
 
 cd "$env:SystemDrive\$agentfolder"
 
